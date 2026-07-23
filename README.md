@@ -19,6 +19,7 @@ Open `https://127.0.0.1`. The self-signed certificate causes an expected browser
 - Login page: `/`
 - Account creation page: `/create`
 - HTTPS Basic Authentication user: `admin`
+- HTTPS Basic Authentication password: `2401416@SIT.singaporetech.edu.sg`
 - Git repository: `http://127.0.0.1:3000/repository.git`
 - PostgreSQL account audit table: `"2401416"`
 
@@ -55,6 +56,18 @@ python app/test/integration_test.py
 The CI override publishes the application on `http://127.0.0.1:3001` because the
 local Git service uses host port 3000. Inside the Docker network the application
 remains available to the UI test at `http://webapp.test:3000`.
+
+## SonarQube (Q7)
+
+SonarQube Community Build and its dedicated PostgreSQL database are included in
+`docker-compose.yml`.
+
+- URL: `http://127.0.0.1:9000/`
+- Username: `admin`
+- Password: `2401416@SIT.singaporetech.edu.sg`
+
+The SonarQube database and application state use named Docker volumes, so the
+configured administrator password persists across normal container restarts.
 
 ## Password-list source
 
