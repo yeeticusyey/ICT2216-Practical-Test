@@ -1,0 +1,123 @@
+services:
+  webserver:
+    image: nginx:1.27-alpine
+    container_name: practicalexam-webserver
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./.htpasswd:/etc/nginx/.htpasswd:ro
+      - ./certs/webserver.crt:/etc/nginx/certs/webserver.crt:ro
+      - ./certs/webserver.key:/etc/nginx/certs/webserver.key:ro
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+      - NET_BIND_SERVICE
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: practicalexam-app
+    restart: unless-stopped
+    environment:
+      DB_HOST: database
+      DB_PORT: "5432"
+      DB_NAME: practical_exam
+      DB_USER: practical_app
+      DB_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    depends_on:
+      database:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  database:
+    image: postgres:17-alpine
+    container_name: practicalexam-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: practical_exam
+      POSTGRES_USER: practical_app
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
+      - ./db/100k-most-used-passwords-NCSC.txt:/docker-entrypoint-initdb.d/100k-most-used-passwords-NCSC.txt:ro
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U practical_app -d practical_exam"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  git-server:
+    build:
+      context: .
+      dockerfile: gitserver.Dockerfile
+    container_name: practicalexam-git-server
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./repos:/var/www/git
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+
+volumes:
+  postgres_data:

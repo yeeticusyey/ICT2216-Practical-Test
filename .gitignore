@@ -1,0 +1,4 @@
+repos/
+secrets/*
+!secrets/db_password.example.txt
+__pycache__/
