@@ -1,0 +1,170 @@
+name: Secure Application CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Unit and integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: app
+        run: npm test
+
+      - name: Create ephemeral database secret
+        run: |
+          mkdir -p secrets
+          openssl rand -hex 24 > secrets/db_password.txt
+
+      - name: Start application over HTTP
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build database app
+
+      - name: Wait for application
+        run: |
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:3001/healthz && exit 0
+            sleep 2
+          done
+          exit 1
+
+      - name: Run HTTP integration tests
+        env:
+          BASE_URL: http://127.0.0.1:3001
+        run: python3 app/test/integration_test.py
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml logs
+
+      - name: Stop integration services
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down --volumes
+
+  dependency-check:
+    name: Dependency checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: app
+        run: |
+          mkdir -p ../reports
+          npm audit --audit-level=high --json > ../reports/npm-audit.json
+
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@1e54355a8b4c8abaa8cc7d0b70aa655a3bb15a6c
+        with:
+          project: ICT2216-Practical-Test
+          path: ./app
+          format: HTML
+          out: reports/dependency-check
+          args: >
+            --failOnCVSS 7
+            --enableRetired
+
+      - name: Upload dependency reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-reports
+          path: reports
+          if-no-files-found: warn
+
+  ui-test:
+    name: Selenium UI test over HTTP
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Create ephemeral database secret
+        run: |
+          mkdir -p secrets
+          openssl rand -hex 24 > secrets/db_password.txt
+
+      - name: Start application and Selenium
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build database app selenium
+
+      - name: Wait for application and Selenium
+        run: |
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:3001/healthz && break
+            sleep 2
+          done
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:4444/wd/hub/status && exit 0
+            sleep 2
+          done
+          exit 1
+
+      - name: Run Selenium UI test over HTTP
+        working-directory: app
+        env:
+          APP_URL: http://webapp.test:3000
+          SELENIUM_URL: http://127.0.0.1:4444/wd/hub
+        run: node test/ui.test.mjs
+
+      - name: Upload UI failure screenshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-failure
+          path: app/ui-failure.png
+          if-no-files-found: ignore
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml logs
+
+      - name: Stop UI services
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down --volumes

@@ -2,3 +2,6 @@ repos/
 secrets/*
 !secrets/db_password.example.txt
 __pycache__/
+node_modules/
+reports/
+ui-failure.png

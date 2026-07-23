@@ -42,6 +42,19 @@ node --test app/test/password-policy.test.js
 python app/test/integration_test.py
 ```
 
+## GitHub Actions (Q5)
+
+`.github/workflows/secure-ci.yml` runs three jobs on pushes and pull requests to
+`main`, or manually with `workflow_dispatch`:
+
+- unit tests plus HTTP integration testing;
+- `npm audit` and OWASP Dependency-Check; and
+- Selenium Chrome UI testing over HTTP.
+
+The CI override publishes the application on `http://127.0.0.1:3001` because the
+local Git service uses host port 3000. Inside the Docker network the application
+remains available to the UI test at `http://webapp.test:3000`.
+
 ## Password-list source
 
 `db/100k-most-used-passwords-NCSC.txt` was obtained from the SecLists repository:

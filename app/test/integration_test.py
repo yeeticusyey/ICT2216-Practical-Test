@@ -8,15 +8,19 @@ import urllib.request
 
 
 BASE_URL = os.getenv("BASE_URL", "https://127.0.0.1")
-AUTH = base64.b64encode(
-    f"{os.environ['BASIC_USER']}:{os.environ['BASIC_PASSWORD']}".encode()
-).decode()
-TLS = ssl._create_unverified_context()
+BASIC_USER = os.getenv("BASIC_USER")
+BASIC_PASSWORD = os.getenv("BASIC_PASSWORD")
+AUTH = (
+    base64.b64encode(f"{BASIC_USER}:{BASIC_PASSWORD}".encode()).decode()
+    if BASIC_USER and BASIC_PASSWORD
+    else None
+)
+TLS = ssl._create_unverified_context() if BASE_URL.startswith("https://") else None
 
 
 def request(path, method="GET", form=None):
     data = urllib.parse.urlencode(form).encode() if form else None
-    headers = {"Authorization": f"Basic {AUTH}"}
+    headers = {"Authorization": f"Basic {AUTH}"} if AUTH else {}
     request_object = urllib.request.Request(
         BASE_URL + path, data=data, headers=headers, method=method
     )

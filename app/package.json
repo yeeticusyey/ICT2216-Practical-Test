@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test"
+    "test": "node --test test/password-policy.test.js"
   },
   "dependencies": {
     "express": "5.2.1",
     "pg": "8.16.3"
+  },
+  "devDependencies": {
+    "selenium-webdriver": "4.45.0"
   }
 }
-

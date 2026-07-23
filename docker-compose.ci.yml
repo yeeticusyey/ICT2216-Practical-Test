@@ -1,0 +1,21 @@
+services:
+  app:
+    ports:
+      - "3001:3000"
+    networks:
+      default:
+        aliases:
+          - webapp.test
+
+  selenium:
+    image: selenium/standalone-chrome:4.44.0-20260505
+    container_name: practicalexam-selenium
+    shm_size: 2gb
+    ports:
+      - "4444:4444"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://127.0.0.1:4444/wd/hub/status || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
