@@ -69,6 +69,12 @@ SonarQube Community Build and its dedicated PostgreSQL database are included in
 The SonarQube database and application state use named Docker volumes, so the
 configured administrator password persists across normal container restarts.
 
+## Local SonarQube scan (Q8)
+
+`sonar-project.properties` configures analysis of the Q4 application source,
+frontend code, and tests under the project key `2401416-q4-web-application`.
+The scanner token is generated at runtime and is not committed to Git.
+
 ## Password-list source
 
 `db/100k-most-used-passwords-NCSC.txt` was obtained from the SecLists repository:
