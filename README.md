@@ -44,9 +44,10 @@ python app/test/integration_test.py
 
 ## GitHub Actions (Q5)
 
-`.github/workflows/secure-ci.yml` runs three jobs on pushes and pull requests to
+`.github/workflows/secure-ci.yml` runs four jobs on pushes and pull requests to
 `main`, or manually with `workflow_dispatch`:
 
+- ESLint scanning with the `eslint-plugin-security` recommended rules;
 - unit tests plus HTTP integration testing;
 - `npm audit` and OWASP Dependency-Check; and
 - Selenium Chrome UI testing over HTTP.

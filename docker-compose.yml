@@ -45,7 +45,6 @@ services:
       DB_PORT: "5432"
       DB_NAME: practical_exam
       DB_USER: practical_app
-      DB_PASSWORD_FILE: /run/secrets/db_password
     secrets:
       - db_password
     depends_on:

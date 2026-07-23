@@ -5,13 +5,16 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test test/password-policy.test.js"
+    "test": "node --test test/password-policy.test.js",
+    "lint:security": "eslint . --max-warnings=0"
   },
   "dependencies": {
     "express": "5.2.1",
     "pg": "8.16.3"
   },
   "devDependencies": {
+    "eslint": "10.7.0",
+    "eslint-plugin-security": "4.0.1",
     "selenium-webdriver": "4.45.0"
   }
 }

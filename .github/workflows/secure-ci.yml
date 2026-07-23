@@ -11,6 +11,29 @@ permissions:
   contents: read
 
 jobs:
+  eslint-security:
+    name: ESLint security scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Run ESLint security scan
+        working-directory: app
+        run: npm run lint:security
+
   integration:
     name: Unit and integration tests
     runs-on: ubuntu-latest

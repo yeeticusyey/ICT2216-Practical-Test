@@ -5,13 +5,12 @@ import { validatePasswordSyntax } from './password-policy.js';
 
 const app = express();
 const port = 3000;
-const passwordFile = process.env.DB_PASSWORD_FILE;
 const pool = new pg.Pool({
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT || 5432),
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
-  password: fs.readFileSync(passwordFile, 'utf8').trim()
+  password: fs.readFileSync('/run/secrets/db_password', 'utf8').trim()
 });
 
 app.disable('x-powered-by');
@@ -164,4 +163,3 @@ app.use((error, _request, response, _next) => {
 });
 
 app.listen(port, '0.0.0.0', () => console.log(`Application listening on port ${port}`));
-
